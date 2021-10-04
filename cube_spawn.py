@@ -32,13 +32,26 @@ if __name__ == '__main__':
     orient = Quaternion(*tf_conversions.transformations.quaternion_from_euler(0., 0.0, 0.785398))
 
     num_of_cubes = random.randint(2,6)
+    num_of_cubes = 6
 
     for num in xrange(0,num_of_cubes):
-        bin_y   =   random.uniform(0,0.5)
-        bin_x   =   random.uniform(0,0.5)
+        robot_x = 0.767
+        robot_y = 0.056
+        r = 0.7
+
+        while True:
+       
+            bin_y   =   random.uniform(0, 0.5)
+            bin_x   =   random.uniform(0, 0.5)
+            
+            if (robot_x - bin_x)**2 + (robot_y - bin_y)**2 < r**2:
+                break
+
+        
         item_name   =   "cube{}".format(num)
         print("Spawning model:%s", item_name)
         item_pose   =   Pose(Point(x=bin_x, y=bin_y,    z=1),   orient)
+        #delete_model(item_name)
         spawn_model(item_name, product_xml, "", item_pose, "world")
 
     with open("/home/" + student + "/catkin_ws/src/hello_ros/urdf/bucket.urdf", "r") as f:
