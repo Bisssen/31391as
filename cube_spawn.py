@@ -34,6 +34,8 @@ if __name__ == '__main__':
     num_of_cubes = random.randint(2,6)
     num_of_cubes = 6
     cube_positions = []
+    bucket_x=0.53
+    bucket_y=-0.23
 
 
     for num in xrange(0,num_of_cubes):
@@ -41,6 +43,7 @@ if __name__ == '__main__':
         robot_y = 0.056
         r = 0.7
         min_cube_dist = 0.1
+        bucket_dist = 0.2
 
         while True:
        
@@ -51,6 +54,9 @@ if __name__ == '__main__':
             for spawned_cube in cube_positions:
                 if (spawned_cube[0] - bin_x)**2 + (spawned_cube[1] - bin_y)**2 < min_cube_dist**2:
                     continue_flag = True
+            
+            if (bucket_x - bin_x)**2 + (bucket_y - bin_y)**2 < bucket_dist**2:
+                continue_flag = True
 
             if continue_flag:
                 continue
