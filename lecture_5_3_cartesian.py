@@ -47,7 +47,7 @@ def move_to_pos(group, x, y, z):
     
     ## Moving to a pose goal
     group.execute(plan1, wait=True)
-    time.sleep(5)
+    time.sleep(10)
 
 def collect_cubes(pub, delete_model):
     ## First initialize moveit_commander and rospy.
@@ -73,9 +73,11 @@ def collect_cubes(pub, delete_model):
     group.set_max_velocity_scaling_factor(1.0)
     group.set_max_acceleration_scaling_factor(1.0)
     
+
+    rotation = 0.0
     # Orient the robot to point downwards
     start_pose = group.get_current_pose().pose
-    start_pose.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(0., -math.pi/2, 0.))
+    start_pose.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(rotation, -math.pi/2, 0.))
     group.set_pose_target(start_pose)
     start_plan = group.plan()
     group.go(wait=True)
@@ -105,13 +107,13 @@ def collect_cubes(pub, delete_model):
         while True:
             # Move above the the cube
             move_to_pos(group, cube_positions[cube]['x'],
-                            cube_positions[cube]['y'],
-                            cube_positions[cube]['z'] + 0.5)
+                               cube_positions[cube]['y'],
+                               cube_positions[cube]['z'] + 0.5)
 
             # Touch cube
             move_to_pos(group, cube_positions[cube]['x'],
-                            cube_positions[cube]['y'],
-                            cube_positions[cube]['z'] + 0.15)
+                               cube_positions[cube]['y'],
+                               cube_positions[cube]['z'] + 0.15)
 
             # Close the gripper
             close(pub)
@@ -120,14 +122,24 @@ def collect_cubes(pub, delete_model):
 
             # Move back above the cube
             move_to_pos(group, cube_positions[cube]['x'],
-                            cube_positions[cube]['y'],
-                            cube_positions[cube]['z'] + 0.5)
+                               cube_positions[cube]['y'],
+                               cube_positions[cube]['z'] + 0.5)
 
             z_after_lift = cube_positions[cube]['z']
 
             # Check if the cube was lifted
             if abs(z_before_lift - z_after_lift) < 0.1:
                 open(pub)
+                # Rotate the hand to hopefully find a valid route down
+                rotation += math.pi/4
+                # Wrap the rotation
+                if rotation >= 2*math.pi:
+                    rotation = 0
+                start_pose = group.get_current_pose().pose
+                start_pose.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(rotation, -math.pi/2, 0.))
+                group.set_pose_target(start_pose)
+                start_plan = group.plan()
+                group.go(wait=True)
                 continue
 
             break
@@ -186,6 +198,8 @@ print('Start')
 def sub_cal(msg):
     # Cube position is saved as a global, so ensure it is received
     global cube_positions
+    # Wait with updating the cube positions until it is fully filled out
+    tmp_cube_positions = {}
     # Get all the names
     names = msg.name
     cube_indexes = []
@@ -204,16 +218,18 @@ def sub_cal(msg):
     for i, pose in enumerate(poses):
         if i in cube_indexes:
             position = pose.position
-            cube_positions['cube' + str(ii)] = {}
-            cube_positions['cube' + str(ii)]['x'] = position.x
-            cube_positions['cube' + str(ii)]['y'] = position.y
-            cube_positions['cube' + str(ii)]['z'] = position.z
+            tmp_cube_positions['cube' + str(ii)] = {}
+            tmp_cube_positions['cube' + str(ii)]['x'] = position.x
+            tmp_cube_positions['cube' + str(ii)]['y'] = position.y
+            tmp_cube_positions['cube' + str(ii)]['z'] = position.z
             ii += 1
         elif i == box_index:
-            cube_positions['box'] = {}
-            cube_positions['box']['x'] = pose.position.x
-            cube_positions['box']['y'] = pose.position.y
-            cube_positions['box']['z'] = pose.position.z
+            tmp_cube_positions['box'] = {}
+            tmp_cube_positions['box']['x'] = pose.position.x
+            tmp_cube_positions['box']['y'] = pose.position.y
+            tmp_cube_positions['box']['z'] = pose.position.z
+    cube_positions = tmp_cube_positions
+
     
 
 # Start listening to the poses of the objects

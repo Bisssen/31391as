@@ -33,21 +33,33 @@ if __name__ == '__main__':
 
     num_of_cubes = random.randint(2,6)
     num_of_cubes = 6
+    cube_positions = []
+
 
     for num in xrange(0,num_of_cubes):
         robot_x = 0.767
         robot_y = 0.056
         r = 0.7
+        min_cube_dist = 0.1
 
         while True:
        
             bin_y   =   random.uniform(0, 0.5)
             bin_x   =   random.uniform(0, 0.5)
             
+            continue_flag = False
+            for spawned_cube in cube_positions:
+                if (spawned_cube[0] - bin_x)**2 + (spawned_cube[1] - bin_y)**2 < min_cube_dist**2:
+                    continue_flag = True
+
+            if continue_flag:
+                continue
+
             if (robot_x - bin_x)**2 + (robot_y - bin_y)**2 < r**2:
                 break
 
-        
+        cube_positions.append([bin_x, bin_y])
+
         item_name   =   "cube{}".format(num)
         print("Spawning model:%s", item_name)
         item_pose   =   Pose(Point(x=bin_x, y=bin_y,    z=1),   orient)
